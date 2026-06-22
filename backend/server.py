@@ -466,7 +466,7 @@ async def submit_contact(payload: ContactSubmissionCreate):
     }
     await db.contact_submissions.insert_one(doc)
     # Email notification: MOCKED — logs to backend log until Resend/SendGrid key is provided
-    logger.info(f"[CONTACT MOCK EMAIL] New message from {doc['email']} ({doc['name']}): {doc['subject']}")
+    logger.info(f"[CONTACT MOCK EMAIL] New message received. ID: {doc['id']}")
     return {"ok": True, "id": doc["id"]}
 
 
