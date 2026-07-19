@@ -1,0 +1,23 @@
+name: Keep Backend Warm
+
+# Pings the portfolio backend every 10 minutes so the Render free-tier
+# instance never idles/cold-starts (which caused 30-50s first-load delays).
+on:
+  schedule:
+    # https://crontab.guru/#*/10_*_*_*_*
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping portfolio API
+        run: |
+          echo "Warming https://devops-react-render-portfolio.onrender.com/api/portfolio"
+          curl -fsS --max-time 60 "https://devops-react-render-portfolio.onrender.com/api/portfolio" \
+            -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" \
+            || echo "Warm-up request finished (non-zero is OK on a cold start; the hit itself wakes the instance)."

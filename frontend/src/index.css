@@ -1,4 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap");
+/* Self-hosted fonts (Outfit / IBM Plex Sans / JetBrains Mono) declared inline
+   in public/index.html <head> so there is zero render-blocking third-party
+   font request. See the @font-face <style> + <link rel="preload"> there. */
 
 @tailwind base;
 @tailwind components;

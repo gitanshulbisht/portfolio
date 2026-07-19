@@ -5,9 +5,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
         <meta name="description" content="A product of emergent.sh" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
+        <!-- Self-hosted fonts: declared inline + preloaded so there is ZERO
+             render-blocking third-party (Google Fonts) request. -->
+        <style>
+            @font-face {
+                font-family: 'IBM Plex Sans';
+                font-style: normal;
+                font-weight: 400 700;
+                font-display: swap;
+                src: url("%PUBLIC_URL%/fonts/IBMPlexSans.woff2") format("woff2");
+            }
+            @font-face {
+                font-family: 'JetBrains Mono';
+                font-style: normal;
+                font-weight: 400 700;
+                font-display: swap;
+                src: url("%PUBLIC_URL%/fonts/JetBrainsMono.woff2") format("woff2");
+            }
+            @font-face {
+                font-family: 'Outfit';
+                font-style: normal;
+                font-weight: 400 700;
+                font-display: swap;
+                src: url("%PUBLIC_URL%/fonts/Outfit.woff2") format("woff2");
+            }
+        </style>
+        <link rel="preload" href="%PUBLIC_URL%/fonts/IBMPlexSans.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="%PUBLIC_URL%/fonts/Outfit.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="%PUBLIC_URL%/fonts/JetBrainsMono.woff2" as="font" type="font/woff2" crossorigin />
         <!--
         manifest.json provides metadata used when your web app is installed on a
         user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
@@ -23,7 +48,8 @@
         -->
         <title>Anshul Bisht's Portfolio</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
-        <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
+        <!-- Deferred: loads after HTML parse, no longer render-blocking -->
+        <script defer src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>

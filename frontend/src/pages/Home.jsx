@@ -8,32 +8,34 @@ import Projects from "../components/sections/Projects";
 import Certifications from "../components/sections/Certifications";
 import BlogSection from "../components/sections/BlogSection";
 import Contact from "../components/sections/Contact";
+import fallbackData from "../data/fallback.json";
 
+// Render instantly from a cached snapshot so the page is interactive even while
+// the (free-tier) backend cold-starts. The backend response, when it arrives,
+// replaces the snapshot with the freshest data.
 export default function Home() {
-    const [data, setData] = useState(null);
+    const [data, setData] = useState(fallbackData);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        api.get("/portfolio")
-            .then((res) => setData(res.data))
-            .catch((e) => setError(e.message));
+        let cancelled = false;
+        api
+            .get("/portfolio")
+            .then((res) => {
+                if (!cancelled) setData(res.data);
+            })
+            .catch((e) => {
+                if (!cancelled) setError(e.message);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
-    if (error) {
+    if (error && data === fallbackData) {
         return (
             <div className="min-h-screen flex items-center justify-center font-mono text-sm text-red-400">
                 Failed to load portfolio data: {error}
-            </div>
-        );
-    }
-    if (!data) {
-        return (
-            <div
-                data-testid="home-loading"
-                className="min-h-screen flex items-center justify-center font-mono text-sm text-zinc-500"
-            >
-                <span className="text-cyan-500">$</span>&nbsp;loading portfolio
-                <span className="caret" />
             </div>
         );
     }
