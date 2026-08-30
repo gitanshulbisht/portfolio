@@ -27,6 +27,7 @@ export default function ChatWidget() {
             }
           }}
           aria-label="Toggle AI Text Chat"
+          aria-expanded={isOpen}
           className="relative group p-3.5 rounded-full bg-zinc-900 border border-cyan-500/50 text-cyan-400 hover:text-white hover:bg-cyan-500/20 shadow-lg shadow-cyan-950/50 backdrop-blur transition-all duration-200 active:scale-95"
         >
           {isOpen ? <X size={22} /> : <MessageSquareCode size={22} />}

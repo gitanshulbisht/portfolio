@@ -123,7 +123,7 @@ export default function ChatWindow({ isOpen, onClose }) {
                 </div>
               )}
               <div
-                className={`max-w-[80%] rounded-lg px-3.5 py-2.5 leading-relaxed break-words ${
+                className={`max-w-[80%] rounded-lg px-3.5 py-2.5 leading-relaxed break-words whitespace-pre-wrap ${
                   isUser
                     ? "bg-cyan-600/90 text-white selection:bg-cyan-800"
                     : "bg-zinc-900 border border-zinc-800 text-zinc-200"
