@@ -38,13 +38,56 @@ DEFAULT_FOLLOWUPS = [
     "How can I contact Anshul for opportunities?"
 ]
 
+async def call_groq_api(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> Optional[str]:
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return None
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if chat_history:
+        for msg in chat_history[-8:]:
+            role = "assistant" if msg.role == "model" else "user"
+            messages.append({"role": role, "content": msg.content})
+    messages.append({"role": "user", "content": user_prompt})
+
+    groq_models = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for model in groq_models:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.6,
+                "max_tokens": 800,
+            }
+            try:
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices and "message" in choices[0]:
+                        content = choices[0]["message"].get("content")
+                        if content:
+                            return content.strip()
+                else:
+                    logger.warning(f"Groq ({model}) returned {resp.status_code}: {resp.text}")
+            except Exception as e:
+                logger.warning(f"Groq API error ({model}): {e}")
+
+    return None
+
 async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        logger.warning("GEMINI_API_KEY environment variable not set.")
+        logger.warning("Neither GROQ_API_KEY nor GEMINI_API_KEY set.")
         return (
             "Anshul's AI assistant is currently in preview mode. "
-            "To connect live AI responses, set the GEMINI_API_KEY in the backend environment."
+            "To connect live AI responses, set GROQ_API_KEY or GEMINI_API_KEY in the backend environment."
         )
 
     raw_turns = []
@@ -82,7 +125,7 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
     configured_model = os.environ.get("GEMINI_MODEL")
     candidate_models = (
         [configured_model] if configured_model else
-        ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.6-flash"]
+        ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.6-flash"]
     )
 
     async with httpx.AsyncClient(timeout=35.0) as client:
@@ -115,6 +158,15 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
             logger.error(f"All candidate Gemini models failed. Last error: {last_error}")
         return "I apologize, but I am having trouble connecting to my AI core right now. Please try again shortly."
 
+async def call_ai_engine(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> str:
+    # 1. Try Groq for high-quota, sub-second responses (14,400 requests/day free tier)
+    groq_reply = await call_groq_api(system_prompt, user_prompt, chat_history)
+    if groq_reply:
+        return groq_reply
+
+    # 2. Fall back to Gemini (500 requests/day free tier)
+    return await call_gemini_api(system_prompt, user_prompt, chat_history)
+
 @ai_router.post("/chat", response_model=ChatResponse)
 async def handle_chat(request: ChatRequest):
     if not request.messages:
@@ -124,7 +176,7 @@ async def handle_chat(request: ChatRequest):
     history = request.messages[:-1]
     system_prompt = build_chat_system_instruction()
 
-    reply = await call_gemini_api(system_prompt=system_prompt, user_prompt=user_message, chat_history=history)
+    reply = await call_ai_engine(system_prompt=system_prompt, user_prompt=user_message, chat_history=history)
 
     return ChatResponse(
         reply=reply,
@@ -138,6 +190,6 @@ async def handle_voice_chat(request: VoiceChatRequest):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Transcript cannot be empty")
 
     system_prompt = build_voice_system_instruction()
-    reply = await call_gemini_api(system_prompt=system_prompt, user_prompt=transcript, chat_history=request.history)
+    reply = await call_ai_engine(system_prompt=system_prompt, user_prompt=transcript, chat_history=request.history)
 
     return VoiceChatResponse(reply=reply)
