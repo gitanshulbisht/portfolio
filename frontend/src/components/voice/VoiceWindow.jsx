@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Mic, MicOff, Volume2, VolumeX, X, Radio } from "lucide-react";
 import VoiceVisualizer from "./VoiceVisualizer";
 import {
@@ -18,66 +18,42 @@ export default function VoiceWindow({ isOpen, onClose }) {
   const [errorNotice, setErrorNotice] = useState(null);
 
   const recognizerRef = useRef(null);
+  const streamRef = useRef(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      handleEndSession();
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const startListening = async () => {
-    setErrorNotice(null);
-    stopSpeaking();
-
-    if (!isSpeechRecognitionSupported()) {
-      setErrorNotice("Speech Recognition is not supported by this browser. Try Chrome, Edge, or Safari.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setAudioStream(stream);
-
-      const recognizer = createSpeechRecognizer({
-        onResult: ({ transcript, isFinal }) => {
-          setUserTranscript(transcript);
-          if (isFinal && transcript.trim()) {
-            handleFinalTranscript(transcript.trim());
-          }
-        },
-        onError: (err) => {
-          console.warn("Speech error:", err);
-          setState("idle");
-        },
-        onEnd: () => {
-          if (state === "listening") {
-            setState("idle");
-          }
-        },
-      });
-
-      recognizerRef.current = recognizer;
-      recognizer.start();
-      setState("listening");
-    } catch (err) {
-      setErrorNotice("Microphone permission denied. Please allow mic access to use Voice AI.");
-      setState("idle");
-    }
-  };
-
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     if (recognizerRef.current) {
-      recognizerRef.current.stop();
+      try {
+        recognizerRef.current.abort();
+      } catch (e) {
+        // Safe catch on already aborted recognizer
+      }
       recognizerRef.current = null;
     }
-    if (audioStream) {
-      audioStream.getTracks().forEach((track) => track.stop());
-      setAudioStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
+    setAudioStream(null);
     setState("idle");
-  };
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopListening();
+      stopSpeaking();
+    };
+  }, [stopListening]);
+
+  // Handle visibility changes without redundant onClose trigger
+  useEffect(() => {
+    if (!isOpen) {
+      stopListening();
+      stopSpeaking();
+    }
+  }, [isOpen, stopListening]);
+
+  if (!isOpen) return null;
 
   const handleFinalTranscript = async (text) => {
     stopListening();
@@ -103,6 +79,45 @@ export default function VoiceWindow({ isOpen, onClose }) {
     }
   };
 
+  const startListening = async () => {
+    setErrorNotice(null);
+    stopSpeaking();
+
+    if (!isSpeechRecognitionSupported()) {
+      setErrorNotice("Speech Recognition is not supported by this browser. Try Chrome, Edge, or Safari.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      setAudioStream(stream);
+
+      const recognizer = createSpeechRecognizer({
+        onResult: ({ transcript, isFinal }) => {
+          setUserTranscript(transcript);
+          if (isFinal && transcript.trim()) {
+            handleFinalTranscript(transcript.trim());
+          }
+        },
+        onError: (err) => {
+          console.warn("Speech error:", err);
+          stopListening();
+        },
+        onEnd: () => {
+          stopListening();
+        },
+      });
+
+      recognizerRef.current = recognizer;
+      recognizer.start();
+      setState("listening");
+    } catch (err) {
+      setErrorNotice("Microphone permission denied. Please allow mic access to use Voice AI.");
+      stopListening();
+    }
+  };
+
   const handleEndSession = () => {
     stopListening();
     stopSpeaking();
@@ -118,7 +133,7 @@ export default function VoiceWindow({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed bottom-24 right-20 z-50 w-[340px] max-w-[calc(100vw-2rem)] bg-zinc-950/95 border border-cyan-500/30 backdrop-blur-md rounded-lg shadow-2xl shadow-cyan-950/40 text-zinc-100 overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-5 duration-200">
+    <div className="fixed bottom-24 right-4 sm:right-20 z-50 w-[340px] max-w-[calc(100vw-2rem)] bg-zinc-950/95 border border-cyan-500/30 backdrop-blur-md rounded-lg shadow-2xl shadow-cyan-950/40 text-zinc-100 overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-5 duration-200">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900/80">
         <div className="flex items-center space-x-2">
@@ -153,7 +168,11 @@ export default function VoiceWindow({ isOpen, onClose }) {
       </div>
 
       {/* Live Transcript / Dialogue */}
-      <div className="p-4 space-y-2.5 text-xs font-mono max-h-[160px] overflow-y-auto whitespace-pre-wrap">
+      <div
+        role="log"
+        aria-live="polite"
+        className="p-4 space-y-2.5 text-xs font-mono max-h-[160px] overflow-y-auto whitespace-pre-wrap"
+      >
         {userTranscript && (
           <div className="text-zinc-400">
             <span className="text-zinc-500">You:</span> {userTranscript}
