@@ -47,16 +47,25 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
             "To connect live AI responses, set the GEMINI_API_KEY in the backend environment."
         )
 
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    
-    contents = []
+    raw_turns = []
     if chat_history:
-        for msg in chat_history[-6:]:
+        for msg in chat_history[-8:]:
             role = "user" if msg.role == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": msg.content}]})
+            raw_turns.append({"role": role, "parts": [{"text": msg.content}]})
 
-    contents.append({"role": "user", "parts": [{"text": user_prompt}]})
+    raw_turns.append({"role": "user", "parts": [{"text": user_prompt}]})
+
+    # Gemini requires contents to start with 'user' role
+    while raw_turns and raw_turns[0]["role"] == "model":
+        raw_turns.pop(0)
+
+    # Coalesce consecutive turns with the same role so turns strictly alternate
+    contents = []
+    for turn in raw_turns:
+        if contents and contents[-1]["role"] == turn["role"]:
+            contents[-1]["parts"][0]["text"] += "\n" + turn["parts"][0]["text"]
+        else:
+            contents.append(turn)
 
     payload = {
         "systemInstruction": {
@@ -69,27 +78,42 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
         }
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=35.0) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code != 200:
-                logger.error(f"Gemini API returned error {resp.status_code}: {resp.text}")
-                return "I apologize, but I am having trouble connecting to my AI core right now. Please try again shortly."
-            
-            data = resp.json()
-            candidates = data.get("candidates", [])
-            if candidates and "content" in candidates[0]:
-                parts = candidates[0]["content"].get("parts", [])
-                if parts and "text" in parts[0]:
-                    return parts[0]["text"].strip()
-            
-            return "I understood your message, but didn't receive a complete response. How else can I assist?"
-    except httpx.TimeoutException:
-        logger.error("Gemini API call timed out")
-        return "The AI service timed out while processing your request. Please try again in a moment."
-    except Exception as e:
-        logger.error(f"Unexpected error calling Gemini API: {e}", exc_info=True)
-        return "An unexpected error occurred while communicating with the AI service."
+    # Model fallback chain in case of temporary high-demand (503) spikes on Google Generative Language API
+    configured_model = os.environ.get("GEMINI_MODEL")
+    candidate_models = (
+        [configured_model] if configured_model else
+        ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.6-flash"]
+    )
+
+    async with httpx.AsyncClient(timeout=35.0) as client:
+        last_error = None
+        for model in candidate_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            try:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return parts[0]["text"].strip()
+                elif resp.status_code in (503, 429):
+                    logger.warning(f"Model {model} returned status {resp.status_code}, trying next model in chain...")
+                    continue
+                else:
+                    logger.error(f"Gemini API ({model}) returned error {resp.status_code}: {resp.text}")
+                    last_error = resp.text
+            except httpx.TimeoutException:
+                logger.warning(f"Gemini model {model} timed out, trying next candidate...")
+                continue
+            except Exception as e:
+                logger.error(f"Unexpected error calling Gemini API ({model}): {e}", exc_info=True)
+                last_error = str(e)
+
+        if last_error:
+            logger.error(f"All candidate Gemini models failed. Last error: {last_error}")
+        return "I apologize, but I am having trouble connecting to my AI core right now. Please try again shortly."
 
 @ai_router.post("/chat", response_model=ChatResponse)
 async def handle_chat(request: ChatRequest):

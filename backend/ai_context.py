@@ -4,50 +4,113 @@ ai_context.py: Grounded portfolio knowledge base and system prompts for Anshul B
 
 PORTFOLIO_PROFILE = {
     "name": "Anshul Bisht",
-    "title": "Full-Stack & DevOps Engineer",
+    "title": "AWS Cloud DevOps & SRE Engineer",
+    "years_experience": "7+",
+    "location": "Vasundhara, Ghaziabad, UP",
     "bio": (
-        "Passionate engineer specializing in modern React frontends, robust FastAPI backends, "
-        "cloud infrastructure, containerization with Docker and Kubernetes, and automated CI/CD pipelines."
+        "AWS-focused Cloud DevOps & SRE Engineer with 7+ years of experience designing, automating, and managing "
+        "scalable, secure, and highly available cloud infrastructure on Amazon Web Services. Strong expertise in "
+        "AWS-native services, CI/CD automation, Infrastructure as Code, container orchestration, and DevSecOps practices."
     ),
+    "stats": [
+        {"label": "Years Experience", "value": "7+"},
+        {"label": "AWS Services Mastered", "value": "20+"},
+        {"label": "Cost Optimized", "value": "~20%"},
+        {"label": "Pipelines Shipped", "value": "50+"}
+    ],
     "skills": {
-        "frontend": ["React", "JavaScript (ES6+)", "Tailwind CSS", "HTML5/CSS3", "Responsive UI"],
-        "backend": ["Python", "FastAPI", "RESTful APIs", "MongoDB", "Node.js"],
-        "devops_cloud": ["Docker", "Kubernetes", "AWS", "Render", "GitHub Actions", "CI/CD pipelines", "Linux"],
-        "tools": ["Git", "Postman", "VS Code", "Vim"]
+        "aws_cloud": ["EC2", "VPC", "IAM", "S3", "EBS", "EFS", "RDS", "DynamoDB", "ELB/ALB/NLB", "Auto Scaling", "Route 53", "CloudFront", "EKS", "ECS", "Lambda", "API Gateway", "CloudWatch", "CloudTrail", "AWS Config", "AWS Backup"],
+        "containers": ["Docker", "Kubernetes", "Amazon EKS", "ECS (Fargate)", "Helm"],
+        "iac": ["Terraform", "AWS CloudFormation", "Ansible"],
+        "cicd_gitops": ["Jenkins", "GitHub Actions", "GitLab CI/CD", "Argo CD", "AWS CodePipeline", "CodeBuild", "CodeDeploy"],
+        "monitoring": ["CloudWatch", "Prometheus", "Grafana", "ELK Stack", "OpenTelemetry"],
+        "security": ["IAM", "KMS", "Security Groups", "AWS Secrets Manager", "HashiCorp Vault", "WAF", "Shield", "PagerDuty"],
+        "frontend_backend": ["React", "Python", "FastAPI", "MongoDB", "Bash", "Node.js"]
     },
-    "projects": [
+    "experience": [
         {
-            "name": "DevOps React Portfolio",
-            "description": "Full-stack portfolio featuring automated CI/CD deployment to GitHub Pages and Render backend with keep-alive monitoring.",
-            "tech": ["React", "Tailwind CSS", "FastAPI", "MongoDB", "GitHub Actions"]
+            "company": "Freelance Consultant",
+            "role": "AWS Cloud & DevOps Engineer",
+            "period": "Jul 2024 - Present",
+            "highlights": "Designed scalable AWS architectures, built containerized microservices on EKS/ECS Fargate, automated with Terraform, GitHub Actions, and SLO observability."
         },
         {
-            "name": "Cloud Infrastructure & CI/CD Pipeline Automation",
-            "description": "Automated build, test, and containerized deployment workflows using GitHub Actions, Docker, and cloud web services.",
-            "tech": ["Docker", "GitHub Actions", "Python", "Cloud Hosting"]
+            "company": "Cognizant",
+            "role": "Senior AWS Cloud DevOps Engineer",
+            "period": "Aug 2023 - Jul 2024",
+            "highlights": "Built CI/CD pipelines for microservices, operated highly available EKS clusters with Helm and Argo CD (GitOps), reduced cloud cost via Auto Scaling and Spot Instances."
+        },
+        {
+            "company": "Infosys",
+            "role": "Senior DevOps Engineer (AWS)",
+            "period": "Sep 2021 - Aug 2023",
+            "highlights": "Led legacy on-prem migrations to AWS, authored reusable Terraform modules, built CI/CD pipelines, shipped blue-green/canary deployments on Kubernetes."
+        },
+        {
+            "company": "Moksa Technologies",
+            "role": "DevOps Engineer",
+            "period": "Dec 2017 - Sep 2021",
+            "highlights": "Managed AWS production environments (EC2, S3, RDS, IAM, ELB), automated ops using Python and Bash, containerized applications with Docker."
+        }
+    ],
+    "projects": [
+        {
+            "name": "AWS Cloud Migration",
+            "description": "Migrated legacy on-prem applications to AWS, achieving zero-downtime cutover and improved scalability.",
+            "tech": ["AWS", "Terraform", "EC2", "RDS", "VPC"]
+        },
+        {
+            "name": "EKS Production Platform",
+            "description": "Designed a secure, highly available EKS platform with GitOps-based deployments via Argo CD, reaching 99.95% uptime.",
+            "tech": ["EKS", "Helm", "Argo CD", "Terraform"]
+        },
+        {
+            "name": "Cost Optimization Initiative",
+            "description": "Reduced AWS monthly spend by ~20% through Spot Instances, rightsizing, and auto-scaling.",
+            "tech": ["AWS", "Spot Instances", "Auto Scaling"]
+        },
+        {
+            "name": "CI/CD Modernization",
+            "description": "Replaced legacy Jenkins jobs with scalable, secure pipelines on GitHub Actions, cutting release cycles by 3x.",
+            "tech": ["GitHub Actions", "Trivy", "SonarQube"]
+        },
+        {
+            "name": "DevOps React Portfolio",
+            "description": "Full-stack personal portfolio featuring automated CI/CD deployment to GitHub Pages and Render backend with keep-alive monitoring and AI chatbot.",
+            "tech": ["React", "Tailwind CSS", "FastAPI", "MongoDB", "GitHub Actions"]
         }
     ],
     "contact": {
         "github": "https://github.com/gitanshulbisht",
-        "linkedin": "https://www.linkedin.com/in/gitanshulbisht",
-        "email": "anshulbisht.dev@gmail.com"
+        "linkedin": "https://www.linkedin.com/in/anshul-bisht/",
+        "email": "anshulbisht.93.ab@gmail.com"
     }
 }
 
 def get_portfolio_context() -> str:
     p = PORTFOLIO_PROFILE
-    skills_str = "\n".join([f"- {category.title()}: {', '.join(items)}" for category, items in p["skills"].items()])
+    skills_str = "\n".join([f"- {category.replace('_', ' ').title()}: {', '.join(items)}" for category, items in p["skills"].items()])
     projects_str = "\n".join([
         f"- {proj['name']}: {proj['description']} (Tech: {', '.join(proj['tech'])})"
         for proj in p["projects"]
     ])
+    exp_str = "\n".join([
+        f"- {exp['role']} at {exp['company']} ({exp['period']}): {exp['highlights']}"
+        for exp in p["experience"]
+    ])
+    stats_str = ", ".join([f"{s['label']}: {s['value']}" for s in p["stats"]])
     
     return f"""
 Candidate Name: {p['name']}
 Title: {p['title']}
+Total Experience: {p['years_experience']} years ({stats_str})
+Location: {p['location']}
 Summary: {p['bio']}
 
-Skills & Expertise:
+Professional Work Experience:
+{exp_str}
+
+Skills & Technical Expertise:
 {skills_str}
 
 Key Projects:
