@@ -70,7 +70,7 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=35.0) as client:
             resp = await client.post(url, json=payload)
             if resp.status_code != 200:
                 logger.error(f"Gemini API returned error {resp.status_code}: {resp.text}")

@@ -14,7 +14,7 @@ export async function sendChatMessage(messages) {
       { messages },
       {
         headers: { "Content-Type": "application/json" },
-        timeout: 20000,
+        timeout: 35000,
       }
     );
     return response.data;

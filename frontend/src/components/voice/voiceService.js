@@ -44,7 +44,7 @@ export async function sendVoiceQuery(transcript, history = []) {
     { transcript, history },
     {
       headers: { "Content-Type": "application/json" },
-      timeout: 15000,
+      timeout: 35000,
     }
   );
   return response.data;
