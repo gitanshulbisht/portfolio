@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from starlette.middleware.cors import CORSMiddleware
+from ai_assistant import ai_router
 
 # -------------------- Configuration --------------------
 JWT_ALGORITHM = "HS256"
@@ -579,6 +580,7 @@ async def delete_blog(post_id: str, user: dict = Depends(get_current_user)):
 
 # -------------------- Wire app --------------------
 app.include_router(api_router)
+app.include_router(ai_router)
 
 app.add_middleware(
     CORSMiddleware,
