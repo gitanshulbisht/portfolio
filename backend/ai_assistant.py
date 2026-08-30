@@ -84,6 +84,7 @@ async def call_groq_api(system_prompt: str, user_prompt: str, chat_history: Opti
                     if choices and "message" in choices[0]:
                         content = choices[0]["message"].get("content")
                         if content:
+                            logger.info(f"Generated AI response via Groq ({model})")
                             return content.strip()
                 else:
                     logger.warning(f"Groq ({model}) returned {resp.status_code}: {resp.text}")
@@ -151,6 +152,7 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
                     if candidates and "content" in candidates[0]:
                         parts = candidates[0]["content"].get("parts", [])
                         if parts and "text" in parts[0]:
+                            logger.info(f"Generated AI response via Gemini ({model})")
                             return parts[0]["text"].strip()
                 elif resp.status_code in (503, 429):
                     logger.warning(f"Model {model} returned status {resp.status_code}, trying next model in chain...")
