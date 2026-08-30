@@ -33,14 +33,14 @@ export default function Certifications({ certifications, education }) {
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.06 }}
                                     data-testid={`cert-${i}`}
-                                    className="flex items-center justify-between gap-4 p-5 bg-[#0a0a0a] border border-white/[0.08] hover:border-cyan-500/40 transition-colors"
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 bg-[#0a0a0a] border border-white/[0.08] hover:border-cyan-500/40 transition-colors"
                                 >
-                                    <div className="flex items-center gap-4 min-w-0">
-                                        <div className="w-10 h-10 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 shrink-0">
-                                            <Award className="w-5 h-5 text-cyan-500" />
+                                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                                        <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 shrink-0">
+                                            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
                                         </div>
                                         <div className="min-w-0">
-                                            <div className="text-white font-medium truncate">
+                                            <div className="text-white font-medium text-sm sm:text-base">
                                                 {c.name}
                                             </div>
                                             <div className="font-mono text-xs text-zinc-500 mt-0.5">
@@ -49,7 +49,7 @@ export default function Certifications({ certifications, education }) {
                                         </div>
                                     </div>
                                     <span
-                                        className={`shrink-0 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest px-2 py-1 border ${
+                                        className={`self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest px-2 py-1 border ${
                                             c.status === "Active"
                                                 ? "text-green-400 border-green-500/40 bg-green-500/5"
                                                 : c.status === "In Progress"

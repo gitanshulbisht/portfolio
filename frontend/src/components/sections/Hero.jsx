@@ -86,7 +86,7 @@ export default function Hero({ profile }) {
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.35 }}
-                            className="mt-6 flex items-center gap-4 text-sm text-zinc-500 font-mono"
+                            className="mt-6 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-zinc-500 font-mono"
                         >
                             <span className="inline-flex items-center gap-1.5">
                                 <MapPin size={14} />

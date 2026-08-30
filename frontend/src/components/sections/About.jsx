@@ -48,11 +48,11 @@ export default function About({ profile, stats }) {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.08 }}
-                                    className={`p-5 sm:p-6 ${
-                                        i < (stats.length - 1) ? "border-r border-white/[0.08]" : ""
-                                    } ${i < 2 ? "border-b sm:border-b-0 border-white/[0.08]" : ""} ${
-                                        i === 1 ? "sm:border-r border-white/[0.08]" : ""
-                                    }`}
+                                    className={`p-5 sm:p-6 border-white/[0.08] ${
+                                        i % 2 === 0 ? "border-r" : "border-r-0"
+                                    } ${i < 2 ? "border-b" : "border-b-0"} ${
+                                        i < 3 ? "sm:border-r" : "sm:border-r-0"
+                                    } sm:border-b-0`}
                                     data-testid={`stat-${i}`}
                                 >
                                     <div className="font-display text-3xl lg:text-4xl font-bold text-white tracking-tighter">

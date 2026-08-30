@@ -73,7 +73,7 @@ export default function ChatWindow({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[540px] max-h-[calc(100vh-8rem)] flex flex-col bg-zinc-950/95 border border-cyan-500/30 backdrop-blur-md rounded-lg shadow-2xl shadow-cyan-950/40 text-zinc-100 overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-5 duration-200"
+      className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[500px] sm:h-[540px] max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-8rem)] flex flex-col bg-zinc-950/95 border border-cyan-500/30 backdrop-blur-md rounded-lg shadow-2xl shadow-cyan-950/40 text-zinc-100 overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-5 duration-200"
     >
       {/* Top Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900/80">
