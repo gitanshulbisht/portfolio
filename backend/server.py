@@ -578,6 +578,62 @@ async def delete_blog(post_id: str, user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
+# -------------------- Admin AI Engine Settings --------------------
+class AISettingsUpdate(BaseModel):
+    provider: str = Field(..., description="Active AI provider: 'groq', 'gemini', or 'auto'")
+
+
+@api_router.get("/admin/ai-settings")
+async def get_ai_settings(user: dict = Depends(get_current_user)):
+    """Retrieve current AI engine settings."""
+    from ai_assistant import get_ai_provider
+    doc = await db.ai_settings.find_one({"key": "config"}, {"_id": 0})
+    provider = doc.get("provider", get_ai_provider()) if doc else get_ai_provider()
+    return {
+        "provider": provider,
+        "available_providers": [
+            {
+                "id": "auto",
+                "name": "Auto (Groq Primary + Gemini Fallback)",
+                "description": "Recommended: Blazing 0.4s Groq speed with 14,400 free requests/day, auto-fails over to Gemini."
+            },
+            {
+                "id": "groq",
+                "name": "Groq LPU Engine",
+                "description": "Direct Groq inference (Qwen 3.8 / GPT-OSS 120B) with 14,400 free requests/day."
+            },
+            {
+                "id": "gemini",
+                "name": "Google Gemini",
+                "description": "Direct Google Generative AI (Gemini 3.5 Flash Lite) with 500 free requests/day."
+            }
+        ],
+        "groq_configured": bool(os.environ.get("GROQ_API_KEY")),
+        "gemini_configured": bool(os.environ.get("GEMINI_API_KEY")),
+        "updated_at": doc.get("updated_at") if doc else None,
+        "updated_by": doc.get("updated_by") if doc else None
+    }
+
+
+@api_router.put("/admin/ai-settings")
+async def update_ai_settings(payload: AISettingsUpdate, user: dict = Depends(get_current_user)):
+    """Switch active AI engine between groq, gemini, and auto."""
+    if payload.provider not in ("groq", "gemini", "auto"):
+        raise HTTPException(status_code=400, detail="Invalid provider. Must be 'groq', 'gemini', or 'auto'")
+
+    from ai_assistant import set_ai_provider
+    set_ai_provider(payload.provider)
+
+    doc = {
+        "key": "config",
+        "provider": payload.provider,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": user.get("email")
+    }
+    await db.ai_settings.update_one({"key": "config"}, {"$set": doc}, upsert=True)
+    return {"message": f"Active AI provider switched to {payload.provider}", "provider": payload.provider}
+
+
 # -------------------- Wire app --------------------
 app.include_router(api_router)
 app.include_router(ai_router)
@@ -684,10 +740,21 @@ async def on_startup():
     await db.login_attempts.create_index("identifier", unique=True)
     await db.blog_posts.create_index("slug", unique=True)
     await db.portfolio_content.create_index("key", unique=True)
+    await db.ai_settings.create_index("key", unique=True)
     # Seeds
     await seed_admin()
     await seed_demo_blog_posts()
     await seed_portfolio_content()
+
+    # Load active AI engine setting
+    try:
+        from ai_assistant import set_ai_provider
+        ai_doc = await db.ai_settings.find_one({"key": "config"})
+        if ai_doc and "provider" in ai_doc:
+            set_ai_provider(ai_doc["provider"])
+            logger.info(f"Loaded active AI provider from database: {ai_doc['provider']}")
+    except Exception as e:
+        logger.warning(f"Could not load AI settings on startup: {e}")
 
 
 @app.on_event("shutdown")

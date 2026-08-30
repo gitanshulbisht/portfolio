@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { toast } from "sonner";
 import PortfolioEditor from "../components/admin/PortfolioEditor";
+import AISettingsPanel from "../components/admin/AISettingsPanel";
 import {
     LogOut,
     Mail,
@@ -12,6 +13,7 @@ import {
     Plus,
     Edit3,
     X,
+    Bot,
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -137,6 +139,18 @@ export default function AdminDashboard() {
                     >
                         Site Content
                     </button>
+                    <button
+                        data-testid="admin-tab-ai"
+                        onClick={() => setTab("ai")}
+                        className={`px-5 py-3 font-mono text-xs uppercase tracking-widest border-b-2 transition-colors inline-flex items-center gap-1.5 ${
+                            tab === "ai"
+                                ? "border-cyan-500 text-cyan-500"
+                                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                        }`}
+                    >
+                        <Bot size={13} />
+                        AI Engine
+                    </button>
                 </div>
 
                 {tab === "contacts" && (
@@ -163,6 +177,7 @@ export default function AdminDashboard() {
                 )}
 
                 {tab === "content" && <PortfolioEditor />}
+                {tab === "ai" && <AISettingsPanel />}
             </main>
 
             {showEditor && (

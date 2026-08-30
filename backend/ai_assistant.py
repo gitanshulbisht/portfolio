@@ -38,6 +38,17 @@ DEFAULT_FOLLOWUPS = [
     "How can I contact Anshul for opportunities?"
 ]
 
+ACTIVE_CONFIG = {
+    "provider": os.environ.get("DEFAULT_AI_PROVIDER", "auto")
+}
+
+def get_ai_provider() -> str:
+    return ACTIVE_CONFIG.get("provider", "auto")
+
+def set_ai_provider(provider: str):
+    if provider in ("groq", "gemini", "auto"):
+        ACTIVE_CONFIG["provider"] = provider
+
 async def call_groq_api(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> Optional[str]:
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
@@ -159,12 +170,25 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
         return "I apologize, but I am having trouble connecting to my AI core right now. Please try again shortly."
 
 async def call_ai_engine(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> str:
-    # 1. Try Groq for high-quota, sub-second responses (14,400 requests/day free tier)
+    provider = get_ai_provider()
+
+    # 1. If explicit Gemini mode is chosen
+    if provider == "gemini":
+        return await call_gemini_api(system_prompt, user_prompt, chat_history)
+
+    # 2. If explicit Groq mode is chosen
+    if provider == "groq":
+        groq_reply = await call_groq_api(system_prompt, user_prompt, chat_history)
+        if groq_reply:
+            return groq_reply
+        # If Groq has transient network/quota failure, fallback to Gemini
+        return await call_gemini_api(system_prompt, user_prompt, chat_history)
+
+    # 3. "auto" (default): Groq first (14,400 free req/day), auto-fallback to Gemini
     groq_reply = await call_groq_api(system_prompt, user_prompt, chat_history)
     if groq_reply:
         return groq_reply
 
-    # 2. Fall back to Gemini (500 requests/day free tier)
     return await call_gemini_api(system_prompt, user_prompt, chat_history)
 
 @ai_router.post("/chat", response_model=ChatResponse)
