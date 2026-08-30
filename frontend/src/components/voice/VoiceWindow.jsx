@@ -34,7 +34,7 @@ export default function VoiceWindow({ isOpen, onClose }) {
       streamRef.current = null;
     }
     setAudioStream(null);
-    setState("idle");
+    setState((prev) => (prev === "listening" ? "idle" : prev));
   }, []);
 
   // Cleanup on unmount
