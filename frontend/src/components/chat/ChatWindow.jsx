@@ -18,6 +18,7 @@ export default function ChatWindow({ isOpen, onClose }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorNotice, setErrorNotice] = useState(null);
+  const [lastFailedUserText, setLastFailedUserText] = useState(null);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -32,11 +33,14 @@ export default function ChatWindow({ isOpen, onClose }) {
     const text = (textToSend || input).trim();
     if (!text || loading) return;
 
-    const newMessages = [...messages, { role: "user", content: text }];
+    // If retrying after a failed message, replace the previous failed exchange
+    const baseMessages = lastFailedUserText ? messages.slice(0, -2) : messages;
+    const newMessages = [...baseMessages, { role: "user", content: text }];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
     setErrorNotice(null);
+    setLastFailedUserText(null);
 
     try {
       const apiPayload = newMessages.map((m) => ({
@@ -48,6 +52,7 @@ export default function ChatWindow({ isOpen, onClose }) {
       setMessages([...newMessages, { role: "model", content: res.reply }]);
     } catch (err) {
       setErrorNotice(err.message);
+      setLastFailedUserText(text);
       setMessages([
         ...newMessages,
         {
@@ -63,6 +68,7 @@ export default function ChatWindow({ isOpen, onClose }) {
   const handleReset = () => {
     setMessages([INITIAL_MESSAGE]);
     setErrorNotice(null);
+    setLastFailedUserText(null);
   };
 
   return (
@@ -105,9 +111,19 @@ export default function ChatWindow({ isOpen, onClose }) {
 
       {/* Notice Banner if Cold Start / Error */}
       {errorNotice && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-950/60 border-b border-amber-800/50 text-[11px] font-mono text-amber-300">
-          <AlertCircle size={13} className="shrink-0" />
-          <span className="truncate">{errorNotice}</span>
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-amber-950/70 border-b border-amber-800/60 text-[11px] font-mono text-amber-300">
+          <div className="flex items-center gap-1.5 truncate">
+            <AlertCircle size={13} className="shrink-0" />
+            <span className="truncate">{errorNotice}</span>
+          </div>
+          {lastFailedUserText && (
+            <button
+              onClick={() => handleSend(lastFailedUserText)}
+              className="shrink-0 underline hover:text-white font-semibold transition-colors"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 
