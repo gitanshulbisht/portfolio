@@ -47,7 +47,8 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
             "To connect live AI responses, set the GEMINI_API_KEY in the backend environment."
         )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     
     contents = []
     if chat_history:
