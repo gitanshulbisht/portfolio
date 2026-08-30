@@ -6,6 +6,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import CustomCursor from "./components/CustomCursor";
 import Home from "./pages/Home";
+import ChatWidget from "./components/chat/ChatWidget";
+import VoiceWidget from "./components/voice/VoiceWidget";
 
 // Lazy-load secondary routes so they don't bloat the initial bundle.
 // Home (the landing page) stays eager for an instant first paint.
@@ -24,6 +26,12 @@ function Shell({ children }) {
             {!isAdmin && <Navbar />}
             {children}
             {!isAdmin && <Footer profile={{ name: "Anshul Bisht" }} />}
+            {!isAdmin && (
+                <>
+                    <ChatWidget />
+                    <VoiceWidget />
+                </>
+            )}
         </>
     );
 }
