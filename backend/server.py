@@ -638,9 +638,22 @@ async def update_ai_settings(payload: AISettingsUpdate, user: dict = Depends(get
 app.include_router(api_router)
 app.include_router(ai_router)
 
+# Allowed CORS origins
+cors_origins_env = os.environ.get("FRONTEND_URL", "")
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://gitanshulbisht.github.io",
+]
+if cors_origins_env:
+    for origin in cors_origins_env.split(","):
+        origin = origin.strip()
+        if origin and origin not in allowed_origins:
+            allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:3000"), "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
