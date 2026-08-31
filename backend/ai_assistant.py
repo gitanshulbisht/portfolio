@@ -3,13 +3,21 @@ ai_assistant.py: FastAPI router handling Text and Voice AI chatbot interactions 
 """
 
 import os
+import time
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from ai_context import build_chat_system_instruction, build_voice_system_instruction
+from ai_guardrails import (
+    chat_limiter,
+    voice_limiter,
+    check_prompt_injection,
+    SAFE_DEFLECTION_MESSAGE,
+)
+from ai_metrics import ai_metrics
 
 logger = logging.getLogger(__name__)
 ai_router = APIRouter(prefix="/api/ai", tags=["AI Assistant"])
@@ -171,51 +179,212 @@ async def call_gemini_api(system_prompt: str, user_prompt: str, chat_history: Op
             logger.error(f"All candidate Gemini models failed. Last error: {last_error}")
         return "I apologize, but I am having trouble connecting to my AI core right now. Please try again shortly."
 
-async def call_ai_engine(system_prompt: str, user_prompt: str, chat_history: Optional[List[ChatMessage]] = None) -> str:
+def get_client_ip(req: Request) -> str:
+    """Extracts client IP from X-Forwarded-For header or direct client host."""
+    forwarded = req.headers.get("x-forwarded-for")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+        if ip:
+            return ip
+    if req.client and req.client.host:
+        return req.client.host
+    return "127.0.0.1"
+
+
+async def call_ai_engine(
+    system_prompt: str,
+    user_prompt: str,
+    chat_history: Optional[List[ChatMessage]] = None,
+) -> Tuple[str, str, str]:
+    """
+    Routes AI request based on active provider configuration.
+    Returns:
+        Tuple[reply: str, engine_used: str, status: str]
+        where engine_used is 'groq' or 'gemini',
+        and status is 'success' or 'fallback'.
+    """
     provider = get_ai_provider()
 
     # 1. If explicit Gemini mode is chosen
     if provider == "gemini":
-        return await call_gemini_api(system_prompt, user_prompt, chat_history)
+        reply = await call_gemini_api(system_prompt, user_prompt, chat_history)
+        return reply, "gemini", "success"
 
     # 2. If explicit Groq mode is chosen
     if provider == "groq":
         groq_reply = await call_groq_api(system_prompt, user_prompt, chat_history)
         if groq_reply:
-            return groq_reply
+            return groq_reply, "groq", "success"
         # If Groq has transient network/quota failure, fallback to Gemini
-        return await call_gemini_api(system_prompt, user_prompt, chat_history)
+        gemini_reply = await call_gemini_api(system_prompt, user_prompt, chat_history)
+        return gemini_reply, "gemini", "fallback"
 
     # 3. "auto" (default): Groq first (14,400 free req/day), auto-fallback to Gemini
+    has_groq_key = bool(os.environ.get("GROQ_API_KEY"))
     groq_reply = await call_groq_api(system_prompt, user_prompt, chat_history)
     if groq_reply:
-        return groq_reply
+        return groq_reply, "groq", "success"
 
-    return await call_gemini_api(system_prompt, user_prompt, chat_history)
+    gemini_reply = await call_gemini_api(system_prompt, user_prompt, chat_history)
+    status_str = "fallback" if has_groq_key else "success"
+    return gemini_reply, "gemini", status_str
+
 
 @ai_router.post("/chat", response_model=ChatResponse)
-async def handle_chat(request: ChatRequest):
+async def handle_chat(request: ChatRequest, req: Request):
     if not request.messages:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Messages cannot be empty")
 
+    client_ip = get_client_ip(req)
+
+    # 1. Rate Limiting Check (10 req/min for chat)
+    allowed, retry_after = chat_limiter.is_allowed(client_ip)
+    if not allowed:
+        ai_metrics.record_request(
+            route="chat",
+            engine="",
+            duration_ms=0.0,
+            status="rate_limited",
+            client_ip=client_ip,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait a moment before sending another message.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     user_message = request.messages[-1].content
+
+    # 2. Prompt Injection & Adversarial Jailbreak Guardrail
+    deflection = check_prompt_injection(user_message)
+    if deflection:
+        prompt_tokens = len(user_message.split())
+        ai_metrics.record_request(
+            route="chat",
+            engine="",
+            duration_ms=0.0,
+            status="blocked_injection",
+            prompt_tokens=prompt_tokens,
+            client_ip=client_ip,
+        )
+        return ChatResponse(
+            reply=deflection,
+            suggested_followups=DEFAULT_FOLLOWUPS,
+        )
+
     history = request.messages[:-1]
     system_prompt = build_chat_system_instruction()
 
-    reply = await call_ai_engine(system_prompt=system_prompt, user_prompt=user_message, chat_history=history)
+    # 3. High-resolution timing & LLM Dispatch
+    start_time = time.perf_counter()
+    res = await call_ai_engine(system_prompt=system_prompt, user_prompt=user_message, chat_history=history)
+    duration_ms = (time.perf_counter() - start_time) * 1000.0
+
+    if isinstance(res, tuple):
+        if len(res) == 3:
+            reply, engine_used, req_status = res
+        elif len(res) == 2:
+            reply, engine_used = res
+            req_status = "success"
+        else:
+            reply = res[0]
+            engine_used = "gemini"
+            req_status = "success"
+    else:
+        reply = str(res)
+        engine_used = "gemini"
+        req_status = "success"
+
+    prompt_tokens = max(1, int(len(user_message.split()) * 1.3))
+    completion_tokens = max(1, int(len(reply.split()) * 1.3))
+
+    ai_metrics.record_request(
+        route="chat",
+        engine=engine_used,
+        duration_ms=duration_ms,
+        status=req_status,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        client_ip=client_ip,
+    )
 
     return ChatResponse(
         reply=reply,
-        suggested_followups=DEFAULT_FOLLOWUPS
+        suggested_followups=DEFAULT_FOLLOWUPS,
     )
 
+
 @ai_router.post("/voice-chat", response_model=VoiceChatResponse)
-async def handle_voice_chat(request: VoiceChatRequest):
+async def handle_voice_chat(request: VoiceChatRequest, req: Request):
     transcript = request.transcript.strip()
     if not transcript:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Transcript cannot be empty")
 
+    client_ip = get_client_ip(req)
+
+    # 1. Rate Limiting Check (15 req/min for voice)
+    allowed, retry_after = voice_limiter.is_allowed(client_ip)
+    if not allowed:
+        ai_metrics.record_request(
+            route="voice",
+            engine="",
+            duration_ms=0.0,
+            status="rate_limited",
+            client_ip=client_ip,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait a moment before sending another message.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    # 2. Prompt Injection Guardrail
+    deflection = check_prompt_injection(transcript)
+    if deflection:
+        prompt_tokens = len(transcript.split())
+        ai_metrics.record_request(
+            route="voice",
+            engine="",
+            duration_ms=0.0,
+            status="blocked_injection",
+            prompt_tokens=prompt_tokens,
+            client_ip=client_ip,
+        )
+        return VoiceChatResponse(reply=deflection)
+
     system_prompt = build_voice_system_instruction()
-    reply = await call_ai_engine(system_prompt=system_prompt, user_prompt=transcript, chat_history=request.history)
+
+    # 3. High-resolution timing & LLM Dispatch
+    start_time = time.perf_counter()
+    res = await call_ai_engine(system_prompt=system_prompt, user_prompt=transcript, chat_history=request.history)
+    duration_ms = (time.perf_counter() - start_time) * 1000.0
+
+    if isinstance(res, tuple):
+        if len(res) == 3:
+            reply, engine_used, req_status = res
+        elif len(res) == 2:
+            reply, engine_used = res
+            req_status = "success"
+        else:
+            reply = res[0]
+            engine_used = "gemini"
+            req_status = "success"
+    else:
+        reply = str(res)
+        engine_used = "gemini"
+        req_status = "success"
+
+    prompt_tokens = max(1, int(len(transcript.split()) * 1.3))
+    completion_tokens = max(1, int(len(reply.split()) * 1.3))
+
+    ai_metrics.record_request(
+        route="voice",
+        engine=engine_used,
+        duration_ms=duration_ms,
+        status=req_status,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        client_ip=client_ip,
+    )
 
     return VoiceChatResponse(reply=reply)

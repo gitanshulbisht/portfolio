@@ -15,11 +15,12 @@ from typing import List, Optional
 import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from starlette.middleware.cors import CORSMiddleware
 from ai_assistant import ai_router
+from ai_metrics import ai_metrics
 
 # -------------------- Configuration --------------------
 JWT_ALGORITHM = "HS256"
@@ -31,9 +32,9 @@ LOCKOUT_MINUTES = 15
 # Use secure cookies if not explicitly in development mode
 SECURE_COOKIES = os.environ.get("ENVIRONMENT", "production").lower() != "development"
 
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'portfolio_db')]
 
 app = FastAPI(title="Anshul Bisht Portfolio API")
 api_router = APIRouter(prefix="/api")
@@ -45,7 +46,7 @@ logger = logging.getLogger(__name__)
 # -------------------- Helpers --------------------
 def get_jwt_secret() -> str:
     """Docstring for get_jwt_secret."""
-    return os.environ["JWT_SECRET"]
+    return os.environ.get("JWT_SECRET", "dev_jwt_secret_key_portfolio_2025")
 
 
 def hash_password(password: str) -> str:
@@ -632,6 +633,27 @@ async def update_ai_settings(payload: AISettingsUpdate, user: dict = Depends(get
     }
     await db.ai_settings.update_one({"key": "config"}, {"$set": doc}, upsert=True)
     return {"message": f"Active AI provider switched to {payload.provider}", "provider": payload.provider}
+
+
+# -------------------- Admin AI Metrics & SRE Observability --------------------
+@api_router.get("/admin/ai-metrics")
+async def get_ai_metrics(user: dict = Depends(get_current_user)):
+    """Retrieve structured SRE telemetry metrics and latency percentiles."""
+    return ai_metrics.get_summary()
+
+
+@api_router.post("/admin/ai-metrics/reset")
+async def reset_ai_metrics(user: dict = Depends(get_current_user)):
+    """Reset all in-memory SRE telemetry metrics."""
+    ai_metrics.reset()
+    return {"ok": True, "message": "Telemetry metrics reset successfully"}
+
+
+# -------------------- SRE Prometheus Exposition --------------------
+@app.get("/metrics", response_class=PlainTextResponse, tags=["Observability"])
+async def prometheus_metrics():
+    """Expose AI assistant metrics in OpenMetrics / Prometheus text format."""
+    return PlainTextResponse(ai_metrics.export_prometheus(), media_type="text/plain; version=0.0.4")
 
 
 # -------------------- Wire app --------------------
