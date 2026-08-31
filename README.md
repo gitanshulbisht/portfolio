@@ -218,12 +218,13 @@ portfolio/
 
 | Method | Route | Description | Auth Required |
 |---|---|---|---|
+| `GET` | `/metrics` | Prometheus exposition text format (OpenMetrics v0.0.4) | No |
 | `GET` | `/api/portfolio` | Fetch active portfolio configuration, profile, and stats | No |
 | `GET` | `/api/blog` | List all published blog articles (supports `?published_only=true`) | No |
 | `GET` | `/api/blog/{slug}` | Fetch single blog article by URL slug | No |
 | `POST` | `/api/contact` | Submit inquiry from contact form | No |
-| `POST` | `/api/ai/chat` | Send conversational turn to AI text assistant | No |
-| `POST` | `/api/ai/voice-chat`| Send voice transcript turn to AI assistant (concise reply) | No |
+| `POST` | `/api/ai/chat` | Send conversational turn to AI text assistant (Rate limited: 10/min, Injection Guard) | No |
+| `POST` | `/api/ai/voice-chat`| Send voice transcript turn to AI assistant (Rate limited: 15/min, Injection Guard) | No |
 
 ### Authentication & Admin Endpoints
 
@@ -242,6 +243,8 @@ portfolio/
 | `DELETE`| `/api/admin/blog/{id}` | Remove blog article | Yes |
 | `GET` | `/api/admin/ai-settings` | Inspect active AI engine and API key statuses | Yes |
 | `PUT` | `/api/admin/ai-settings` | Switch active engine (`auto`, `groq`, `gemini`) | Yes |
+| `GET` | `/api/admin/ai-metrics` | SRE Telemetry summary (P50/P90/P95 latencies, tokens, spans) | Yes |
+| `POST` | `/api/admin/ai-metrics/reset` | Reset in-memory telemetry buffers and latency arrays | Yes |
 
 ---
 
@@ -365,8 +368,11 @@ Comprehensive test suites are included across the application:
 # Activate virtual environment
 source .venv/bin/activate
 
-# Run backend unit tests (Password hashing, JWT, AI system prompt contracts)
-pytest backend/tests/test_server_auth.py backend/tests/test_ai_assistant.py -v
+# Run backend unit tests (Password hashing, JWT, Guardrails, SRE Metrics, AI Router)
+pytest backend/tests/test_server_auth.py backend/tests/test_ai_assistant.py backend/tests/test_ai_guardrails.py backend/tests/test_ai_metrics.py -v
+
+# Run the 15-case Automated Golden EVALS Suite
+pytest backend/tests/test_ai_evals.py -v -s
 
 # Run integration tests against a running backend
 REACT_APP_BACKEND_URL=http://127.0.0.1:8001 pytest backend/tests/backend_test.py -v
