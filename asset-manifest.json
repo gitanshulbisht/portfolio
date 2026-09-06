@@ -1,21 +1,23 @@
 {
   "files": {
-    "main.css": "/portfolio/static/css/main.6d98b658.css",
-    "main.js": "/portfolio/static/js/main.94e7ecba.js",
-    "static/js/821.a5b15a69.chunk.js": "/portfolio/static/js/821.a5b15a69.chunk.js",
-    "static/js/974.8c40b911.chunk.js": "/portfolio/static/js/974.8c40b911.chunk.js",
+    "main.css": "/portfolio/static/css/main.031ca05f.css",
+    "main.js": "/portfolio/static/js/main.395561a0.js",
+    "static/js/821.ced39d69.chunk.js": "/portfolio/static/js/821.ced39d69.chunk.js",
+    "static/js/974.00833aca.chunk.js": "/portfolio/static/js/974.00833aca.chunk.js",
     "static/js/965.d2dcabba.chunk.js": "/portfolio/static/js/965.d2dcabba.chunk.js",
     "static/js/921.2caa9985.chunk.js": "/portfolio/static/js/921.2caa9985.chunk.js",
+    "static/js/522.c6af8001.chunk.js": "/portfolio/static/js/522.c6af8001.chunk.js",
     "index.html": "/portfolio/index.html",
-    "main.6d98b658.css.map": "/portfolio/static/css/main.6d98b658.css.map",
-    "main.94e7ecba.js.map": "/portfolio/static/js/main.94e7ecba.js.map",
-    "821.a5b15a69.chunk.js.map": "/portfolio/static/js/821.a5b15a69.chunk.js.map",
-    "974.8c40b911.chunk.js.map": "/portfolio/static/js/974.8c40b911.chunk.js.map",
+    "main.031ca05f.css.map": "/portfolio/static/css/main.031ca05f.css.map",
+    "main.395561a0.js.map": "/portfolio/static/js/main.395561a0.js.map",
+    "821.ced39d69.chunk.js.map": "/portfolio/static/js/821.ced39d69.chunk.js.map",
+    "974.00833aca.chunk.js.map": "/portfolio/static/js/974.00833aca.chunk.js.map",
     "965.d2dcabba.chunk.js.map": "/portfolio/static/js/965.d2dcabba.chunk.js.map",
-    "921.2caa9985.chunk.js.map": "/portfolio/static/js/921.2caa9985.chunk.js.map"
+    "921.2caa9985.chunk.js.map": "/portfolio/static/js/921.2caa9985.chunk.js.map",
+    "522.c6af8001.chunk.js.map": "/portfolio/static/js/522.c6af8001.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.6d98b658.css",
-    "static/js/main.94e7ecba.js"
+    "static/css/main.031ca05f.css",
+    "static/js/main.395561a0.js"
   ]
 }
