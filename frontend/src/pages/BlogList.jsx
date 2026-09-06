@@ -2,14 +2,21 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { ArrowRight, ArrowLeft } from "lucide-react";
+import fallbackBlogs from "../data/blogs.json";
 
 export default function BlogList() {
-    const [posts, setPosts] = useState(null);
+    const [posts, setPosts] = useState(fallbackBlogs);
 
     useEffect(() => {
         api.get("/blog")
-            .then((res) => setPosts(res.data))
-            .catch(() => setPosts([]));
+            .then((res) => {
+                if (Array.isArray(res.data) && res.data.length > 0) {
+                    setPosts(res.data);
+                }
+            })
+            .catch(() => {
+                // Retain fallbackBlogs
+            });
     }, []);
 
     return (

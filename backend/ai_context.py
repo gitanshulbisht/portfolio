@@ -78,6 +78,61 @@ PORTFOLIO_PROFILE = {
             "name": "DevOps React Portfolio",
             "description": "Full-stack personal portfolio featuring automated CI/CD deployment to GitHub Pages and Render backend with keep-alive monitoring and AI chatbot.",
             "tech": ["React", "Tailwind CSS", "FastAPI", "MongoDB", "GitHub Actions"]
+        },
+        {
+            "name": "RotePlayoffs",
+            "description": "Deterministic, zero-dependency engineering plays suite for AI developer agents and human engineers (env-sync, docker-scrub, git-prune, cloud-zombie-hunter, token-audit).",
+            "tech": ["Node.js", "Rote CLI", "AST Scanners", "Zero-Dependency"]
+        },
+        {
+            "name": "FreshDocs",
+            "description": "Self-healing multi-source documentation RAG chatbot indexing 5,780+ pages across Docker, K8s, EKS, and ArgoCD with Bright Data Scraper Studio and ChromaDB.",
+            "tech": ["Python", "FastAPI", "Bright Data", "ChromaDB", "DeepSeek V4"]
+        },
+        {
+            "name": "Workflow Orchestrator",
+            "description": "Airflow-lite distributed DAG engine in Spring Boot 4.1, PostgreSQL SKIP LOCKED queues, Redisson leader locks, and transactional outbox event streams.",
+            "tech": ["Java 21", "Spring Boot 4.1", "PostgreSQL 16", "Redis 7", "React 19"]
+        },
+        {
+            "name": "SmartReco",
+            "description": "Behavioral AI recommendation agent for learning marketplaces with 7-node LangGraph reasoning graph, ChromaDB RAG, and active Redis event invalidation.",
+            "tech": ["Python", "FastAPI", "LangGraph", "ChromaDB", "Redis", "LangSmith"]
+        },
+        {
+            "name": "K8s-Medic",
+            "description": "Autonomous AI SRE agent that continuously detects, diagnoses, and remediates Kubernetes cluster incidents via function calling and live Prometheus metrics.",
+            "tech": ["Python 3.11", "OpenAI Function Calling", "FastAPI", "React", "kind", "Prometheus"]
+        },
+        {
+            "name": "AI Kubernetes Upgrades",
+            "description": "Autonomous 17-step cluster upgrade feasibility, compatibility, and risk assessment agent using live cluster telemetry and NVIDIA NIM Llama 3.1 70B.",
+            "tech": ["Python", "NVIDIA NIM", "Model Context Protocol (MCP)", "kubectl"]
+        },
+        {
+            "name": "AI CI/CD Agent Teammate",
+            "description": "Conversational DevOps agent living in Slack and Telegram diagnosing GitHub Actions failures, fetching logs, triggering rebuilds, and managing ArgoCD deployments.",
+            "tech": ["n8n", "LangChain", "OpenRouter", "gh CLI", "argocd CLI", "Docker"]
+        },
+        {
+            "name": "AI Kubernetes Agent Teammate",
+            "description": "Self-hosted conversational SRE teammate with 20 custom kubectl tools, Groq LPU inference, human-in-the-loop safety gates, and Telegram integration.",
+            "tech": ["n8n", "Groq LPU (Llama 3.3 70B)", "Docker", "kubectl", "Telegram"]
+        },
+        {
+            "name": "AI Cloud Cost Detective",
+            "description": "Full-stack cloud FinOps web app scanning Azure Resource Groups with NVIDIA NIM Llama 3.3 70B, streaming progress via WebSockets, and generating CLI fixes.",
+            "tech": ["FastAPI", "React 19", "TypeScript", "PostgreSQL 15", "NVIDIA NIM"]
+        },
+        {
+            "name": "AI Kubernetes Agent (RCA)",
+            "description": "Full-stack Kubernetes troubleshooting agent with Next.js Glassmorphism UI, Google Gemini 2.5 Pro reasoning, and InsForge real-time subscriptions.",
+            "tech": ["Next.js", "FastAPI", "Google Gemini 2.5 Pro", "InsForge", "kubectl"]
+        },
+        {
+            "name": "Production-Grade End-to-End DevOps",
+            "description": "Enterprise cloud platform provisioning multi-AZ AWS EKS v1.30 via Terraform and deploying 25+ OpenTelemetry microservices using Argo CD GitOps with Server-Side Apply.",
+            "tech": ["AWS EKS", "Terraform", "Argo CD", "OpenTelemetry", "Jaeger", "Grafana"]
         }
     ],
     "contact": {

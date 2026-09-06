@@ -2,20 +2,26 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { ArrowLeft } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import fallbackBlogs from "../data/blogs.json";
 
 export default function BlogDetail() {
     const { slug } = useParams();
     const navigate = useNavigate();
-    const [post, setPost] = useState(null);
+    const localFallback = fallbackBlogs.find((p) => p.slug === slug);
+    const [post, setPost] = useState(localFallback || null);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         api.get(`/blog/${slug}`)
             .then((res) => setPost(res.data))
-            .catch((e) =>
-                setError(e.response?.status === 404 ? "Post not found." : e.message),
-            );
-    }, [slug]);
+            .catch((e) => {
+                if (!localFallback) {
+                    setError(e.response?.status === 404 ? "Post not found." : e.message);
+                }
+            });
+    }, [slug, localFallback]);
 
     if (error) {
         return (
@@ -40,7 +46,7 @@ export default function BlogDetail() {
 
     return (
         <div data-testid="blog-detail-page" className="min-h-screen pt-28 pb-24">
-            <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Link
                     to="/blog"
                     className="inline-flex items-center gap-2 font-mono text-xs text-zinc-500 hover:text-cyan-500 transition-colors uppercase tracking-widest mb-8"
@@ -56,7 +62,7 @@ export default function BlogDetail() {
                             day: "numeric",
                         })}
                     </span>
-                    {post.tags?.slice(0, 3).map((t) => (
+                    {post.tags?.slice(0, 4).map((t) => (
                         <span key={t}>#{t}</span>
                     ))}
                 </div>
@@ -70,7 +76,7 @@ export default function BlogDetail() {
                 </p>
 
                 {post.cover_image && (
-                    <div className="aspect-[16/9] mb-10 overflow-hidden border border-white/[0.08]">
+                    <div className="aspect-[16/9] mb-10 overflow-hidden border border-white/[0.08] rounded">
                         <img
                             src={post.cover_image}
                             alt={post.title}
@@ -79,8 +85,10 @@ export default function BlogDetail() {
                     </div>
                 )}
 
-                <div className="prose-dark whitespace-pre-wrap text-zinc-300 leading-relaxed">
-                    {post.content}
+                <div className="prose-dark text-zinc-300 leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {post.content}
+                    </ReactMarkdown>
                 </div>
             </article>
         </div>

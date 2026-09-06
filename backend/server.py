@@ -9,6 +9,7 @@ import uuid
 import logging
 import secrets
 import re
+import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
@@ -711,51 +712,68 @@ async def seed_admin():
 
 
 async def seed_demo_blog_posts():
-    """Docstring for seed_demo_blog_posts."""
-    count = await db.blog_posts.count_documents({})
-    if count > 0:
-        return
-    now_iso = datetime.now(timezone.utc).isoformat()
-    posts = [
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Designing Highly Available EKS Clusters in Production",
-            "slug": "designing-ha-eks-clusters",
-            "excerpt": "Patterns and pitfalls when running mission-critical workloads on Amazon EKS with Argo CD and Helm.",
-            "content": "Running EKS in production demands more than `eksctl create cluster`. In this post I cover multi-AZ node groups, pod disruption budgets, cluster autoscaler tuning, and the GitOps wiring with Argo CD that has kept clusters at 99.95% uptime across multiple engagements.\n\nKey topics:\n- Multi-AZ node groups and topology spread constraints\n- PodDisruptionBudgets that actually protect SLOs\n- Argo CD app-of-apps pattern\n- Secrets management via External Secrets + AWS Secrets Manager\n- Observability with Prometheus, Grafana and CloudWatch",
-            "tags": ["EKS", "Kubernetes", "AWS", "GitOps"],
-            "cover_image": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80",
-            "published": True,
-            "created_at": now_iso,
-            "updated_at": now_iso,
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Cutting AWS Spend by 20% Without Sacrificing Reliability",
-            "slug": "cutting-aws-spend-20-percent",
-            "excerpt": "A pragmatic playbook combining Spot, rightsizing, Savings Plans and architectural cleanup.",
-            "content": "Cost is a feature. Here's the exact playbook I use to reduce AWS bills by ~20% across teams — without sacrificing the reliability SLOs we promised.\n\nThe four levers:\n1. Rightsizing with CloudWatch + Compute Optimizer\n2. Spot for stateless workloads, with proper interruption handling\n3. Savings Plans for predictable baseline\n4. Architectural cleanup (idle ELBs, orphaned EBS, NAT egress)\n\nThe last lever is usually the biggest unexpected win.",
-            "tags": ["AWS", "FinOps", "Cost"],
-            "cover_image": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80",
-            "published": True,
-            "created_at": now_iso,
-            "updated_at": now_iso,
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "From Jenkins to GitHub Actions: A Migration Field Guide",
-            "slug": "jenkins-to-github-actions-migration",
-            "excerpt": "Lessons learned modernizing legacy Jenkins pipelines for a portfolio of microservices.",
-            "content": "Legacy Jenkins jobs are great at one thing: building technical debt. Here's how I replace them with composable, secure GitHub Actions workflows that ship 3x faster.\n\nWhat to keep, what to rewrite, and how to do it without freezing deployments for a month.",
-            "tags": ["CI/CD", "GitHub Actions", "Jenkins"],
-            "cover_image": "https://images.pexels.com/photos/34803969/pexels-photo-34803969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-            "published": True,
-            "created_at": now_iso,
-            "updated_at": now_iso,
-        },
-    ]
-    await db.blog_posts.insert_many(posts)
-    logger.info(f"Seeded {len(posts)} demo blog posts")
+    """Seed and upsert blog posts from blogs.json into MongoDB."""
+    blogs_file = ROOT_DIR / "blogs.json"
+    posts = []
+    if blogs_file.exists():
+        try:
+            with open(blogs_file, "r", encoding="utf-8") as f:
+                posts = json.load(f)
+            logger.info(f"Loaded {len(posts)} posts from {blogs_file}")
+        except Exception as e:
+            logger.warning(f"Failed to read blogs.json: {e}")
+
+    # Fallback demo posts if blogs.json is absent or empty
+    if not posts:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        posts = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Designing Highly Available EKS Clusters in Production",
+                "slug": "designing-ha-eks-clusters",
+                "excerpt": "Patterns and pitfalls when running mission-critical workloads on Amazon EKS with Argo CD and Helm.",
+                "content": "Running EKS in production demands more than `eksctl create cluster`. In this post I cover multi-AZ node groups, pod disruption budgets, cluster autoscaler tuning, and the GitOps wiring with Argo CD that has kept clusters at 99.95% uptime across multiple engagements.\n\nKey topics:\n- Multi-AZ node groups and topology spread constraints\n- PodDisruptionBudgets that actually protect SLOs\n- Argo CD app-of-apps pattern\n- Secrets management via External Secrets + AWS Secrets Manager\n- Observability with Prometheus, Grafana and CloudWatch",
+                "tags": ["EKS", "Kubernetes", "AWS", "GitOps"],
+                "cover_image": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80",
+                "published": True,
+                "created_at": now_iso,
+                "updated_at": now_iso,
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Cutting AWS Spend by 20% Without Sacrificing Reliability",
+                "slug": "cutting-aws-spend-20-percent",
+                "excerpt": "A pragmatic playbook combining Spot, rightsizing, Savings Plans and architectural cleanup.",
+                "content": "Cost is a feature. Here's the exact playbook I use to reduce AWS bills by ~20% across teams — without sacrificing the reliability SLOs we promised.\n\nThe four levers:\n1. Rightsizing with CloudWatch + Compute Optimizer\n2. Spot for stateless workloads, with proper interruption handling\n3. Savings Plans for predictable baseline\n4. Architectural cleanup (idle ELBs, orphaned EBS, NAT egress)\n\nThe last lever is usually the biggest unexpected win.",
+                "tags": ["AWS", "FinOps", "Cost"],
+                "cover_image": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80",
+                "published": True,
+                "created_at": now_iso,
+                "updated_at": now_iso,
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "From Jenkins to GitHub Actions: A Migration Field Guide",
+                "slug": "jenkins-to-github-actions-migration",
+                "excerpt": "Lessons learned modernizing legacy Jenkins pipelines for a portfolio of microservices.",
+                "content": "Legacy Jenkins jobs are great at one thing: building technical debt. Here's how I replace them with composable, secure GitHub Actions workflows that ship 3x faster.\n\nWhat to keep, what to rewrite, and how to do it without freezing deployments for a month.",
+                "tags": ["CI/CD", "GitHub Actions", "Jenkins"],
+                "cover_image": "https://images.pexels.com/photos/34803969/pexels-photo-34803969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+                "published": True,
+                "created_at": now_iso,
+                "updated_at": now_iso,
+            },
+        ]
+
+    for post in posts:
+        post_doc = dict(post)
+        post_doc.pop("_id", None)
+        await db.blog_posts.update_one(
+            {"slug": post_doc["slug"]},
+            {"$set": post_doc},
+            upsert=True
+        )
+    logger.info(f"Seeded and upserted {len(posts)} blog posts into database")
 
 
 async def seed_portfolio_content():

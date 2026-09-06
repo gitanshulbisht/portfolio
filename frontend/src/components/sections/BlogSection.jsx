@@ -2,14 +2,19 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { api } from "../../lib/api";
+import fallbackBlogs from "../../data/blogs.json";
 
 export default function BlogSection() {
-    const [posts, setPosts] = useState([]);
+    const [posts, setPosts] = useState(fallbackBlogs.slice(0, 3));
 
     useEffect(() => {
         api.get("/blog")
-            .then((res) => setPosts(res.data.slice(0, 3)))
-            .catch(() => setPosts([]));
+            .then((res) => {
+                if (Array.isArray(res.data) && res.data.length > 0) {
+                    setPosts(res.data.slice(0, 3));
+                }
+            })
+            .catch(() => {});
     }, []);
 
     return (
